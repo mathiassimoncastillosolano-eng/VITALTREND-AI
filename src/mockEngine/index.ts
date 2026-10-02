@@ -17,7 +17,7 @@ export const mockEngine = {
   getPatients(options: { fail?: boolean } = {}): Promise<Patient[]> {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        if (options.fail) reject(new Error('Los datos simulados no pudieron cargarse.'))
+        if (options.fail) reject(new Error('No se pudieron cargar las lecturas de los pacientes.'))
         else resolve(createMockPatients())
       }, LATENCY_MS)
     })
@@ -51,7 +51,7 @@ export const mockEngine = {
     return next
   },
 
-  /** Escenario de demostración: define hacia dónde evoluciona el paciente. */
+  /** Escenario de prueba: define hacia dónde evoluciona el paciente. */
   scenarioTarget(patient: Patient, scenario: ScenarioKey): VitalSigns {
     const off = SCENARIO_OFFSETS[scenario]
     const t = {} as VitalSigns

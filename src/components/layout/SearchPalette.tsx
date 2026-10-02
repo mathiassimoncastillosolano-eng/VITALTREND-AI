@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useAppStore } from '@/store/useAppStore'
+import { openPatient } from '@/hooks/useRoute'
+import { patientMatches } from '@/utils/search'
 import { useDebounce } from '@/hooks/useDebounce'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { StatusBadge } from '@/components/ui/StatusBadge'
@@ -12,16 +14,12 @@ export function SearchPalette() {
   const setOpen = useAppStore((s) => s.setSearchOpen)
   const patients = useAppStore((s) => s.patients)
   const analyses = useAppStore((s) => s.analyses)
-  const select = useAppStore((s) => s.selectPatient)
   const [q, setQ] = useState('')
   const [cursor, setCursor] = useState(0)
   const dq = useDebounce(q, 180)
 
   const results = useMemo(() => {
-    const term = dq.trim().toLowerCase()
-    return patients
-      .filter((p) => !term || [p.code, p.hospitalId, p.room, `cama ${p.bed}`, p.specialty].some((x) => x.toLowerCase().includes(term)))
-      .slice(0, 8)
+    return patients.filter((p) => patientMatches(p, dq)).slice(0, 8)
   }, [patients, dq])
 
   useEffect(() => {
@@ -33,8 +31,8 @@ export function SearchPalette() {
   useEffect(() => setCursor(0), [dq])
 
   const choose = (id: string) => {
-    select(id, 'resumen')
     setOpen(false)
+    openPatient(id)
   }
 
   return (
@@ -64,10 +62,10 @@ export function SearchPalette() {
                 return (
                   <li key={p.id} role="option" aria-selected={i === cursor}>
                     <button onClick={() => choose(p.id)} onMouseEnter={() => setCursor(i)} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left ${i === cursor ? 'bg-surface-2' : ''}`}>
-                      <Avatar code={p.code} hue={p.hue} size={32} />
+                      <Avatar name={p.fullName} hue={p.hue} size={32} />
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[13.5px] font-semibold">{p.code}</span>
-                        <span className="block truncate text-[12px] text-muted">{p.hospitalId} · Hab. {p.room} · Cama {p.bed} · {p.specialty}</span>
+                        <span className="block text-[13.5px] font-semibold">{p.fullName}</span>
+                        <span className="block truncate text-[12px] text-muted">{p.code} · ID {p.hospitalId} · Hab. {p.room} · Cama {p.bed} · {p.specialty}</span>
                       </span>
                       {a && <StatusBadge level={a.risk.level} size="sm" short />}
                     </button>
@@ -75,7 +73,7 @@ export function SearchPalette() {
                 )
               })}
             </ul>
-            {results.length === 0 && <div className="mt-2"><EmptyState title="Sin resultados" description="Busca por nombre, ID, habitación o cama." /></div>}
+            {results.length === 0 && <div className="mt-2"><EmptyState title={dq.trim() ? `Sin resultados para “${dq.trim()}”` : 'Sin pacientes'} description="Busca por nombre, ID, habitación (hab 103) o cama (cama 2)." /></div>}
             <div className="mt-2 flex gap-3 px-2 text-[11px] text-muted"><span>↑↓ navegar</span><span>Enter abrir</span><span>Esc cerrar</span></div>
           </motion.div>
         </div>

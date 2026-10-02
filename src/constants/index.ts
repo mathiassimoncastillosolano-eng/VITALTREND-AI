@@ -2,6 +2,8 @@ import type { RiskLevel, ScenarioKey, VitalKey, VitalSigns } from '../types'
 
 export const VITAL_KEYS: VitalKey[] = ['hr', 'rr', 'spo2', 'temp', 'sbp']
 export const PRIMARY_VITALS: VitalKey[] = ['hr', 'rr', 'spo2', 'temp']
+/** Signos que se muestran en tarjetas y en la vista clínica (incluye presión arterial). */
+export const DISPLAY_VITALS: VitalKey[] = ['hr', 'rr', 'spo2', 'temp', 'sbp']
 
 export const VITAL_META: Record<
   VitalKey,
@@ -11,7 +13,7 @@ export const VITAL_META: Record<
   rr: { label: 'Frecuencia respiratoria', short: 'FR', unit: 'rpm', decimals: 0, adverse: 1, min: 6, max: 45 },
   spo2: { label: 'Saturación de oxígeno', short: 'SpO₂', unit: '%', decimals: 0, adverse: -1, min: 70, max: 100 },
   temp: { label: 'Temperatura', short: 'T°', unit: '°C', decimals: 1, adverse: 1, min: 34, max: 41.5 },
-  sbp: { label: 'Presión sistólica', short: 'PAS', unit: 'mmHg', decimals: 0, adverse: -1, min: 60, max: 200 },
+  sbp: { label: 'Presión arterial sistólica', short: 'PAS', unit: 'mmHg', decimals: 0, adverse: -1, min: 60, max: 200 },
 }
 
 /** Prior poblacional usado en el arranque en frío (cold start). */
@@ -43,7 +45,7 @@ export const LEVEL_ORDER: Record<RiskLevel, number> = { estable: 0, evaluacion: 
 
 export const LEVEL_META: Record<RiskLevel, { label: string; short: string; tone: string }> = {
   estable: { label: 'Estable', short: 'Estable', tone: 'ok' },
-  evaluacion: { label: 'Requiere evaluación', short: 'Evaluación', tone: 'warn' },
+  evaluacion: { label: 'En observación', short: 'Observación', tone: 'warn' },
   elevado: { label: 'Riesgo elevado', short: 'Elevado', tone: 'high' },
   critico: { label: 'Crítico', short: 'Crítico', tone: 'crit' },
 }
@@ -54,8 +56,9 @@ export const SCENARIO_META: Record<ScenarioKey, { label: string; description: st
   elevado: { label: 'Riesgo elevado', description: 'Desviación alta y sostenida; NEWS2 aún bajo.' },
   critico: { label: 'Crítico', description: 'Deterioro evidente en varios signos.' },
 }
+export const SCENARIO_TARGET_NAME = 'Paciente 03'
 
-/** Desplazamientos absolutos respecto a la línea base para cada escenario de demostración. */
+/** Desplazamientos absolutos respecto a la línea base para cada escenario de prueba. */
 export const SCENARIO_OFFSETS: Record<ScenarioKey, VitalSigns> = {
   estable: { hr: 0, rr: 0, spo2: 0, temp: 0, sbp: 0 },
   deterioro: { hr: 14, rr: 4, spo2: -2, temp: 0.8, sbp: -6 },
@@ -71,3 +74,12 @@ export const SIM_SPEEDS = [0.5, 1, 2] as const
 
 export const DISCLAIMER =
   'VitalTrend AI es una herramienta experimental de apoyo a la priorización. No diagnostica, no sustituye el juicio clínico y no ha sido validada prospectivamente.'
+
+/** Color de cada signo en gráficos y monitor (coherente en toda la aplicación). */
+export const VITAL_COLOR: Record<VitalKey, string> = {
+  hr: '#34d3aa',
+  rr: '#f3b84a',
+  spo2: '#5bc8ff',
+  temp: '#f97f50',
+  sbp: '#b69cff',
+}

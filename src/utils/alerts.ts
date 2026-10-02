@@ -31,7 +31,7 @@ export function suppressedPatients(patients: Patient[], analyses: Record<string,
 
 const LEVEL_TITLE: Record<RiskLevel, string> = {
   estable: 'Estable',
-  evaluacion: 'Requiere evaluación',
+  evaluacion: 'En observación',
   elevado: 'Riesgo elevado',
   critico: 'Crítico: evaluación prioritaria',
 }

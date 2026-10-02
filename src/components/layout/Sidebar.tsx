@@ -1,11 +1,11 @@
 import { motion } from 'motion/react'
-import { Activity, Bell, FileBarChart, FlaskConical, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Settings, Users, type LucideIcon } from 'lucide-react'
-import { navigate, type RouteId } from '@/hooks/useRoute'
+import { Bell, FileBarChart, FlaskConical, LayoutDashboard, PanelLeftClose, PanelLeftOpen, Settings, Users, type LucideIcon } from 'lucide-react'
+import { getOrigin, navigate, type RouteId } from '@/hooks/useRoute'
 import { useAppStore } from '@/store/useAppStore'
 import { useAlerts } from '@/hooks/useDerived'
 import { Logo } from './Logo'
 
-export const NAV: { id: RouteId; label: string; icon: LucideIcon }[] = [
+export const NAV: { id: Exclude<RouteId, 'patient' | 'login'>; label: string; icon: LucideIcon }[] = [
   { id: 'dashboard', label: 'Inicio', icon: LayoutDashboard },
   { id: 'patients', label: 'Pacientes', icon: Users },
   { id: 'alerts', label: 'Alertas', icon: Bell },
@@ -35,7 +35,7 @@ export function Sidebar({ route }: { route: RouteId }) {
       <div className="flex h-16 items-center px-[21px]"><Logo collapsed={collapsed} /></div>
       <nav className="mt-2 flex-1 space-y-1 px-3">
         {NAV.map((n) => {
-          const active = route === n.id
+          const active = route === n.id || (route === 'patient' && getOrigin() === n.id)
           const Icon = n.icon
           return (
             <button key={n.id} onClick={() => navigate(n.id)} aria-current={active ? 'page' : undefined} title={collapsed ? n.label : undefined} className={`relative flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-medium transition-colors ${active ? 'text-ink' : 'text-muted hover:bg-surface-2/70 hover:text-ink'}`}>
@@ -48,9 +48,6 @@ export function Sidebar({ route }: { route: RouteId }) {
         })}
       </nav>
       <div className="space-y-2 border-t border-line p-3">
-        {!collapsed && (
-          <div className="flex items-center gap-2 rounded-lg bg-accent-soft px-3 py-2 text-[11.5px] text-accent"><Activity size={14} aria-hidden /> Entorno académico · Datos simulados</div>
-        )}
         <button onClick={toggle} aria-label={collapsed ? 'Expandir barra lateral' : 'Contraer barra lateral'} className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] text-muted hover:bg-surface-2/70 hover:text-ink">
           {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
           {!collapsed && 'Contraer'}
@@ -66,7 +63,7 @@ export function MobileNav({ route }: { route: RouteId }) {
     <nav aria-label="Navegación principal" className="glass fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-line px-1 py-1.5 md:hidden">
       {NAV.map((n) => {
         const Icon = n.icon
-        const active = route === n.id
+        const active = route === n.id || (route === 'patient' && getOrigin() === n.id)
         return (
           <button key={n.id} onClick={() => navigate(n.id)} aria-label={n.label} aria-current={active ? 'page' : undefined} className={`relative flex flex-1 flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] ${active ? 'text-accent' : 'text-muted'}`}>
             <Icon size={19} aria-hidden />

@@ -11,7 +11,7 @@ export function ShapFactors({ factors }: { factors: ShapFactor[] }) {
     <div>
       <div className="mb-3 flex items-center justify-between">
         <h4 className="text-[13px] font-semibold">¿Por qué generamos esta alerta?</h4>
-        <span className="text-[11.5px] text-muted">Contribución <Term term="SHAP">SHAP</Term> (simulada)</span>
+        <span className="text-[11.5px] text-muted">Contribución <Term term="SHAP">SHAP</Term> </span>
       </div>
       {shown.length === 0 ? (
         <p className="rounded-lg bg-surface-2/60 p-3 text-[13px] text-muted">Ningún factor contribuye de forma relevante: los signos están dentro de su línea base.</p>

@@ -8,6 +8,7 @@ import Alerts from '@/pages/Alerts'
 import Analytics from '@/pages/Analytics'
 import Dashboard from '@/pages/Dashboard'
 import Login from '@/pages/Login'
+import PatientDetail from '@/pages/PatientDetail'
 import Patients from '@/pages/Patients'
 import Reports from '@/pages/Reports'
 import Settings from '@/pages/Settings'
@@ -15,6 +16,7 @@ import Settings from '@/pages/Settings'
 const PAGES: Record<Exclude<RouteId, 'login'>, ComponentType> = {
   dashboard: Dashboard,
   patients: Patients,
+  patient: PatientDetail,
   alerts: Alerts,
   analytics: Analytics,
   reports: Reports,

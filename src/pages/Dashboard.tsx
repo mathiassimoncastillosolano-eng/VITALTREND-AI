@@ -1,14 +1,12 @@
 import { useMemo } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Activity, BellOff, ShieldAlert, TriangleAlert, Users } from 'lucide-react'
+import { Activity, BellOff, Eye, OctagonAlert, TriangleAlert, Users } from 'lucide-react'
 import { staggerParent } from '@/animations/variants'
-import { LEVEL_ORDER } from '@/constants'
 import { mockEngine } from '@/mockEngine'
-import { useAlerts, useFilteredPatients, useStats } from '@/hooks/useDerived'
-import { navigate } from '@/hooks/useRoute'
-import { useAppStore } from '@/store/useAppStore'
+import { useAlerts, useFilteredPatients, useNowMin, useStats } from '@/hooks/useDerived'
+import { navigate, openPatient } from '@/hooks/useRoute'
+import { useAppStore, type LevelFilter } from '@/store/useAppStore'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { DemoGuide } from '@/components/layout/DemoGuide'
 import { Disclaimer } from '@/components/layout/Disclaimer'
 import { KpiCard } from '@/components/ui/KpiCard'
 import { KpiSkeleton, PatientCardSkeleton } from '@/components/ui/Skeleton'
@@ -19,8 +17,7 @@ import { Button } from '@/components/ui/Button'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { PatientCard } from '@/components/patients/PatientCard'
 import { PatientFilters } from '@/components/patients/PatientFilters'
-import { DecisionFlow } from '@/components/decision/DecisionFlow'
-import { windowLabel } from '@/utils/format'
+import { formatMinutes, shortName, windowLabel } from '@/utils/format'
 
 export default function Dashboard() {
   const status = useAppStore((s) => s.status)
@@ -29,110 +26,98 @@ export default function Dashboard() {
   const analyses = useAppStore((s) => s.analyses)
   const filter = useAppStore((s) => s.filter)
   const setFilter = useAppStore((s) => s.setFilter)
-  const select = useAppStore((s) => s.selectPatient)
-  const selectedId = useAppStore((s) => s.selectedId)
   const required = useAppStore((s) => s.settings.requiredWindows)
-  const showBand = useAppStore((s) => s.settings.showBaselineBand)
   const compact = useAppStore((s) => s.settings.compactCards)
   const stats = useStats()
   const alerts = useAlerts()
   const filtered = useFilteredPatients()
+  const nowMin = useNowMin()
   const retained = useMemo(() => mockEngine.getSuppressed(patients, analyses), [patients, analyses])
 
-  const featuredMode = filter.level === 'todos' && !filter.query.trim()
-  const featured = useMemo(
-    () => (featuredMode ? [...filtered].sort((a, b) => LEVEL_ORDER[analyses[b.id].risk.level] - LEVEL_ORDER[analyses[a.id].risk.level] || analyses[b.id].risk.score - analyses[a.id].risk.score).slice(0, 3) : []),
-    [featuredMode, filtered, analyses],
+  const sustainedAlerts = alerts.filter((a) => a.level !== 'evaluacion')
+  const withActiveAlert = patients.filter((p) => analyses[p.id]?.alertActive).length
+  const highestRisk = useMemo(
+    () => patients.filter((p) => analyses[p.id]?.risk.level === 'critico').sort((a, b) => analyses[b.id].risk.score - analyses[a.id].risk.score)[0],
+    [patients, analyses],
   )
-  const featuredIds = new Set(featured.map((p) => p.id))
-  const rest = featuredMode ? filtered.filter((p) => !featuredIds.has(p.id)) : filtered
+  const elevatedSustained = patients.filter((p) => analyses[p.id]?.risk.level === 'elevado' && analyses[p.id].alertActive).length
 
-  const header = <PageHeader title="Pacientes monitorizados" subtitle="Análisis continuo de signos vitales y comparación con línea base individual" />
+  const toggle = (level: LevelFilter) => setFilter({ level: filter.level === level ? 'todos' : level })
+  const searching = filter.query.trim() !== ''
+
+  const header = (
+    <PageHeader
+      title="Pacientes monitorizados"
+      subtitle={status === 'ready' ? `Última lectura a las ${formatMinutes(nowMin)}` : 'Cargando lecturas…'}
+    />
+  )
 
   if (status === 'error') return <>{header}<ErrorState onRetry={() => void load()} /></>
-
-  const card = (p: (typeof patients)[number]) => (
-    <PatientCard key={p.id} patient={p} analysis={analyses[p.id]} selected={selectedId === p.id} required={required} showBand={showBand} compact={compact} onSelect={(id) => select(id, 'resumen')} />
-  )
 
   return (
     <div>
       {header}
       {status === 'loading' ? (
         <>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">{[0, 1, 2, 3].map((i) => <KpiSkeleton key={i} />)}</div>
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">{[0, 1, 2, 3, 4].map((i) => <KpiSkeleton key={i} />)}</div>
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">{[0, 1, 2].map((i) => <PatientCardSkeleton key={i} />)}</div>
         </>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
-          <div className="min-w-0 space-y-6">
-            <motion.div variants={staggerParent} initial="initial" animate="animate" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <KpiCard label="Total monitorizados" value={stats.total} icon={Users} tone="accent" active={filter.level === 'todos'} onClick={() => setFilter({ level: 'todos' })} hint="Pacientes en vigilancia continua" />
-              <KpiCard label="Estables" value={stats.estable} total={stats.total} icon={Activity} tone="ok" active={filter.level === 'estable'} onClick={() => setFilter({ level: 'estable' })} hint="Dentro de su línea base" />
-              <KpiCard label="En riesgo" value={stats.evaluacion} total={stats.total} icon={TriangleAlert} tone="warn" active={filter.level === 'evaluacion'} onClick={() => setFilter({ level: 'evaluacion' })} hint="Requieren evaluación" />
-              <KpiCard label="Riesgo elevado / críticos" value={stats.highOrCritical} total={stats.total} icon={ShieldAlert} tone="crit" active={filter.level === 'elevado'} onClick={() => setFilter({ level: stats.critico && !stats.elevado ? 'critico' : 'elevado' })} hint={`${stats.elevado} elevados · ${stats.critico} críticos`} />
-            </motion.div>
+        <div className="space-y-6">
+          <motion.div variants={staggerParent} initial="initial" animate="animate" className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
+            <KpiCard label="Pacientes monitorizados" value={stats.total} icon={Users} tone="accent" active={filter.level === 'todos'} onClick={() => setFilter({ level: 'todos' })} hint={`${withActiveAlert} con alerta activa`} />
+            <KpiCard label="Estables" value={stats.estable} total={stats.total} icon={Activity} tone="ok" active={filter.level === 'estable'} onClick={() => toggle('estable')} hint="Dentro de su línea base" />
+            <KpiCard label="En observación" value={stats.evaluacion} total={stats.total} icon={Eye} tone="warn" active={filter.level === 'evaluacion'} onClick={() => toggle('evaluacion')} hint={retained.length ? `${retained.length} con alerta retenida` : 'Desviación sin persistencia'} />
+            <KpiCard label="Riesgo elevado" value={stats.elevado} total={stats.total} icon={TriangleAlert} tone="high" active={filter.level === 'elevado'} onClick={() => toggle('elevado')} hint={`${elevatedSustained} con desviación sostenida`} />
+            <KpiCard label="Críticos" value={stats.critico} total={stats.total} icon={OctagonAlert} tone="crit" active={filter.level === 'critico'} onClick={() => toggle('critico')} hint={highestRisk ? `Mayor riesgo: ${highestRisk.fullName}` : 'Sin pacientes críticos'} />
+          </motion.div>
 
-            <PatientFilters />
+          <PatientFilters />
 
-            {featured.length > 0 && (
-              <section aria-label="Atención prioritaria">
-                <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-muted">Atención prioritaria</h2>
-                <motion.div variants={staggerParent} initial="initial" animate="animate" className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-                  <AnimatePresence initial={false}>{featured.map(card)}</AnimatePresence>
-                </motion.div>
-              </section>
-            )}
-
-            <section aria-label="Pacientes">
-              {featured.length > 0 && <h2 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-muted">Resto de pacientes</h2>}
-              {rest.length === 0 && featured.length === 0 ? (
-                <EmptyState action={<Button onClick={() => setFilter({ level: 'todos', query: '' })}>Limpiar filtros</Button>} />
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <section aria-label="Pacientes" className="min-w-0">
+              {filtered.length === 0 ? (
+                <EmptyState
+                  title={searching ? `Sin resultados para “${filter.query.trim()}”` : 'No hay pacientes en este estado.'}
+                  description={searching ? 'Busca por nombre, ID, habitación (hab 103) o cama (cama 2).' : 'Cambia el filtro de estado para ver otros pacientes.'}
+                  action={<Button onClick={() => setFilter({ level: 'todos', query: '' })}>{searching ? 'Limpiar búsqueda' : 'Ver todos los pacientes'}</Button>}
+                />
               ) : (
                 <motion.div layout variants={staggerParent} initial="initial" animate="animate" className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-                  <AnimatePresence initial={false}>{rest.map(card)}</AnimatePresence>
+                  <AnimatePresence initial={false}>
+                    {filtered.map((p) => <PatientCard key={p.id} patient={p} analysis={analyses[p.id]} nowMin={nowMin} required={required} compact={compact} />)}
+                  </AnimatePresence>
                 </motion.div>
               )}
             </section>
+
+            <aside className="space-y-4 xl:sticky xl:top-0 xl:self-start" aria-label="Alertas activas">
+              <Card title="Alertas activas" subtitle="Desviaciones sostenidas, por nivel de riesgo" actions={<Button size="sm" variant="ghost" className="whitespace-nowrap" onClick={() => navigate('alerts')}>Ver todas</Button>}>
+                <ul className="-mx-2 space-y-1">
+                  {sustainedAlerts.slice(0, 5).map((a) => {
+                    const p = patients.find((x) => x.id === a.patientId)
+                    if (!p) return null
+                    return (
+                      <li key={a.id}>
+                        <button onClick={() => openPatient(p.id, 'explicabilidad')} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-surface-2">
+                          <span className="tabular w-11 text-[12px] font-semibold">{windowLabel(a.t)}</span>
+                          <span className="min-w-0 flex-1"><span className="block truncate text-[13px] font-semibold">{shortName(p.fullName)}</span><span className="block truncate text-[11.5px] text-muted">{a.factor}</span></span>
+                          <StatusBadge level={a.level} size="sm" short />
+                        </button>
+                      </li>
+                    )
+                  })}
+                  {sustainedAlerts.length === 0 && <li className="px-2 py-3 text-[13px] text-muted">No hay alertas activas.</li>}
+                </ul>
+                {retained.length > 0 && (
+                  <p className="mt-3 flex items-start gap-2 border-t border-line pt-3 text-[12px] text-muted">
+                    <BellOff size={14} className="mt-0.5 shrink-0 text-accent" aria-hidden />
+                    <span>{retained.length === 1 ? '1 alerta retenida' : `${retained.length} alertas retenidas`} hasta confirmar persistencia: {retained.map((p) => shortName(p.fullName)).join(', ')}.</span>
+                  </p>
+                )}
+              </Card>
+            </aside>
           </div>
-
-          <aside className="space-y-4" aria-label="Contexto clínico">
-            <Card title="Alertas activas" subtitle="Ordenadas por nivel de riesgo" actions={<Button size="sm" variant="ghost" onClick={() => navigate('alerts')}>Ver todas</Button>}>
-              <ul className="-mx-2 space-y-1">
-                {alerts.filter((a) => a.level !== 'evaluacion').slice(0, 4).map((a) => {
-                  const p = patients.find((x) => x.id === a.patientId)
-                  if (!p) return null
-                  return (
-                    <li key={a.id}>
-                      <button onClick={() => select(p.id, 'explicabilidad')} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-surface-2">
-                        <span className="tabular w-11 text-[12px] font-semibold">{windowLabel(a.t)}</span>
-                        <span className="min-w-0 flex-1"><span className="block text-[13px] font-semibold">{p.code}</span><span className="block truncate text-[11.5px] text-muted">{a.factor}</span></span>
-                        <StatusBadge level={a.level} size="sm" short />
-                      </button>
-                    </li>
-                  )
-                })}
-                {alerts.filter((a) => a.level !== 'evaluacion').length === 0 && <li className="px-2 py-3 text-[13px] text-muted">Sin alertas activas.</li>}
-              </ul>
-            </Card>
-
-            <Card title="Filtro anti-fatiga" subtitle={`Persistencia requerida: ${required}/3 ventanas`}>
-              <div className="flex items-center gap-3">
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent-soft text-accent"><BellOff size={18} aria-hidden /></span>
-                <div>
-                  <div className="tabular text-[22px] font-semibold leading-none">{retained.length}</div>
-                  <div className="text-[12px] text-muted">alertas retenidas por desviación no sostenida</div>
-                </div>
-              </div>
-              {retained.length > 0 && <p className="mt-3 text-[12.5px] text-muted">{retained.map((p) => p.code).join(', ')} {retained.length > 1 ? 'tienen' : 'tiene'} un pico aislado: se confirma solo si persiste.</p>}
-            </Card>
-
-            <Card title="Flujo de decisión clínica" subtitle="El sistema apoya; la decisión es del profesional">
-              <DecisionFlow decided={false} />
-            </Card>
-
-            <DemoGuide />
-          </aside>
         </div>
       )}
       <Disclaimer />

@@ -31,3 +31,23 @@ export function formatSigned(value: number, decimals = 0): string {
 export function formatHours(h: number): string {
   return `${h.toFixed(h % 1 === 0 ? 0 : 1)} h`
 }
+
+/** "ahora", "hace 4 min" o "hace 1 h 5 min" respecto al último momento de monitoreo. */
+export function formatAgo(nowMin: number, thenMin: number): string {
+  const diff = Math.max(0, Math.round(nowMin - thenMin))
+  if (diff < 1) return 'ahora'
+  if (diff < 60) return `hace ${diff} min`
+  const h = Math.floor(diff / 60)
+  const m = diff % 60
+  return m ? `hace ${h} h ${m} min` : `hace ${h} h`
+}
+
+/** "Teresa Gómez": primer nombre y primer apellido. */
+export function shortName(fullName: string): string {
+  const t = fullName.split(/\s+/)
+  return t.length <= 2 ? fullName : `${t[0]} ${t[t.length - 2]}`
+}
+
+export function sexLabel(sex: 'F' | 'M'): string {
+  return sex === 'F' ? 'Femenino' : 'Masculino'
+}

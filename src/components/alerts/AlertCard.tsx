@@ -42,8 +42,8 @@ export function AlertCard({ alert, patient, analysis, status, onOpen, onAction }
           <div className="tabular rounded-lg bg-surface-2 px-2.5 py-1.5 text-[13px] font-semibold">{windowLabel(alert.t)}</div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <button onClick={onOpen} className="text-[14.5px] font-semibold hover:text-accent">{patient.code}</button>
-              <span className="text-[12px] text-muted">{patient.hospitalId} · Hab. {patient.room} · Cama {patient.bed}</span>
+              <button onClick={onOpen} className="text-[14.5px] font-semibold hover:text-accent">{patient.fullName}</button>
+              <span className="text-[12px] text-muted">{patient.code} · ID {patient.hospitalId} · Hab. {patient.room} · Cama {patient.bed}</span>
             </div>
             <p className="mt-1 text-[13px]">{analysis.shap[0]?.text ?? alert.factor}</p>
           </div>

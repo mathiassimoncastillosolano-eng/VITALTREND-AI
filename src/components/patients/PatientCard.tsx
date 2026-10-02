@@ -1,96 +1,96 @@
 import { memo } from 'react'
 import { motion } from 'motion/react'
-import { ArrowUpRight, BellOff, Hourglass } from 'lucide-react'
-import { LEVEL_META, PRIMARY_VITALS } from '@/constants'
+import { Activity, ArrowUpRight, BellOff, Hourglass } from 'lucide-react'
+import { DISPLAY_VITALS, LEVEL_META } from '@/constants'
 import { staggerChild } from '@/animations/variants'
-import type { Patient, PatientAnalysis, VitalKey } from '@/types'
-import { effectiveBaseline } from '@/utils/clinical'
-import { formatMinutes, formatSigned } from '@/utils/format'
-import { SEVERITY_LABEL, severityLevel } from '@/utils/severity'
+import type { Patient, PatientAnalysis } from '@/types'
+import { formatAgo, formatMinutes, sexLabel } from '@/utils/format'
+import { rhythmLabel } from '@/utils/waveforms'
+import { openPatient, patientHref } from '@/hooks/useRoute'
 import { Avatar } from '@/components/ui/Avatar'
 import { Button } from '@/components/ui/Button'
 import { StatusBadge } from '@/components/ui/StatusBadge'
 import { LEVEL_STYLE } from '@/components/ui/levelStyle'
-import { Sparkline } from '@/components/charts/Sparkline'
-import { VitalMetric } from '@/components/vitals/VitalMetric'
+import { VitalTile } from '@/components/vitals/VitalTile'
 import { PersistenceIndicator } from '@/components/alerts/PersistenceIndicator'
 
 interface Props {
   patient: Patient
   analysis: PatientAnalysis
-  selected: boolean
+  nowMin: number
   required: number
-  showBand: boolean
   compact?: boolean
-  onSelect: (id: string) => void
 }
 
-function focusVital(a: PatientAnalysis): VitalKey {
-  return PRIMARY_VITALS.reduce((best, k) => (a.deviations[k].adverseZ > a.deviations[best].adverseZ ? k : best), 'spo2' as VitalKey)
-}
-
-function PatientCardBase({ patient, analysis: a, selected, required, showBand, compact = false, onSelect }: Props) {
+function PatientCardBase({ patient, analysis: a, nowMin, required, compact = false }: Props) {
   const level = a.risk.level
   const st = LEVEL_STYLE[level]
-  const fv = focusVital(a)
-  const dev = a.deviations[fv]
-  const eff = effectiveBaseline(patient.baseline)
-  const devLevel = severityLevel(dev.severity)
-  const border = selected ? 'border-accent' : level === 'critico' ? 'border-crit/50' : level === 'elevado' ? 'border-high/40' : 'border-line'
+  const border = level === 'critico' ? 'border-crit/50' : level === 'elevado' ? 'border-high/40' : 'border-line'
+  const score = Math.round(a.risk.score)
+  const rhythm = rhythmLabel(a.current.hr, patient.rhythm === 'irregular')
 
   return (
     <motion.article
       layout
       variants={staggerChild}
-      whileHover={{ y: -2 }}
-      className={`flex flex-col rounded-2xl border bg-surface p-4 shadow-card transition-colors duration-300 ${border} ${level === 'elevado' ? 'glow-high' : ''}`}
-      aria-label={`${patient.code}, ${LEVEL_META[level].label}`}
+      className={`flex flex-col rounded-2xl border bg-surface p-4 shadow-card transition-colors duration-300 hover:border-accent/40 ${border} ${level === 'elevado' ? 'glow-high' : ''}`}
+      aria-label={`${patient.fullName}, ${LEVEL_META[level].label}`}
     >
       <header className="flex items-start gap-3">
-        <Avatar code={patient.code} hue={patient.hue} />
+        <Avatar name={patient.fullName} hue={patient.hue} />
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-[14.5px] font-semibold leading-tight">{patient.code}</h3>
-          <p className="truncate text-[12px] text-muted">{patient.hospitalId} · Hab. {patient.room} · Cama {patient.bed}</p>
-          <p className="truncate text-[12px] text-muted">{patient.specialty}</p>
+          <h3 className="text-[14.5px] font-semibold leading-tight">
+            <a href={patientHref(patient.id)} className="hover:text-accent hover:underline">{patient.fullName}</a>
+          </h3>
+          <p className="mt-0.5 truncate text-[12px] text-muted">{patient.code} · ID {patient.hospitalId}</p>
+          <p className="truncate text-[12px] text-muted">{patient.age} años · {sexLabel(patient.sex)} · {patient.specialty}</p>
+          <p className="truncate text-[12px] text-muted">Habitación {patient.room} · Cama {patient.bed}</p>
         </div>
-        <span className={level === 'critico' ? 'crit-pulse rounded-full' : ''}><StatusBadge level={level} size="sm" /></span>
+        <span className={level === 'critico' ? 'crit-pulse rounded-full' : ''}><StatusBadge level={level} size="sm" short /></span>
       </header>
 
-      <div className="mt-3 grid grid-cols-4 gap-1.5">
-        {PRIMARY_VITALS.map((k) => (
-          <VitalMetric key={k} vital={k} deviation={a.deviations[k]} trend={a.trends[k]} variant="compact" />
+      <div className="mt-3 grid grid-cols-3 gap-1.5">
+        {DISPLAY_VITALS.map((k, i) => (
+          <VitalTile
+            key={k}
+            vital={k}
+            deviation={a.deviations[k]}
+            trend={a.trends[k]}
+            className={!patient.ecgMonitored && i === DISPLAY_VITALS.length - 1 ? 'col-span-2' : ''}
+          />
         ))}
+        {patient.ecgMonitored && (
+          <div className="rounded-xl bg-surface-2/70 px-3 py-2.5" role="group" aria-label={`ECG: ${rhythm}`}>
+            <div className="flex items-center justify-between text-[11.5px] font-medium text-muted"><span>ECG</span><Activity size={13} aria-hidden /></div>
+            <div className="text-[13px] font-semibold leading-tight">{patient.rhythm === 'irregular' ? 'Irregular' : a.current.hr > 100 ? 'Taquicardia' : a.current.hr < 50 ? 'Bradicardia' : 'Sinusal'}</div>
+            <div className="truncate text-[11.5px] text-muted">{rhythm}</div>
+          </div>
+        )}
       </div>
-
-      {!compact && (
-      <div className="mt-3 rounded-lg bg-surface-2/50 px-2 pt-1.5">
-        <div className="flex items-center justify-between px-1 text-[10.5px] text-muted">
-          <span>{fv === 'hr' ? 'FC' : fv === 'rr' ? 'FR' : fv === 'spo2' ? 'SpO₂' : 'T°'} · últimas 24 ventanas</span>
-          <span>línea base · rango individual</span>
-        </div>
-        <Sparkline values={patient.history.slice(-24).map((p) => p[fv])} mean={eff[fv].mean} sd={eff[fv].sd} color={level === 'estable' ? 'var(--c-ok)' : st.hex} showBand={showBand} />
-      </div>
-      )}
 
       <div className="mt-3 space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-[11.5px] text-muted">Desviación de línea base</span>
-          <span className={`tabular text-[12px] font-semibold uppercase ${dev.severity === 'normal' ? 'text-ok' : LEVEL_STYLE[devLevel].text}`}>
-            {dev.severity === 'normal' ? 'Baja' : SEVERITY_LABEL[dev.severity].replace('Desviación ', '')} {formatSigned(dev.percent, 0)}%
-          </span>
+        <div className="flex items-center gap-3">
+          <span className="text-[11.5px] text-muted">Riesgo</span>
+          <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-2" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={score} aria-label="Puntaje de riesgo">
+            <div className={`h-full rounded-full transition-all duration-500 ${st.solid}`} style={{ width: `${score}%` }} />
+          </div>
+          <span className={`tabular text-[12px] font-semibold ${level === 'estable' ? '' : st.text}`}>{score}</span>
+          <span className="tabular text-[11.5px] text-muted">NEWS2 {a.news2.total}</span>
         </div>
-        <PersistenceIndicator variant="compact" windows={a.windows} persistence={a.persistence} required={required} />
+        {!compact && <PersistenceIndicator variant="compact" windows={a.windows} persistence={a.persistence} required={required} />}
         {(a.baselineBuilding || a.risk.suppressedByPersistence) && (
-          <div className="flex flex-wrap gap-1.5 pt-0.5">
-            {a.baselineBuilding && <span className="inline-flex items-center gap-1 rounded-full bg-warn-soft px-2 py-0.5 text-[10.5px] font-medium text-warn"><Hourglass size={10} aria-hidden /> Construyendo línea base</span>}
-            {a.risk.suppressedByPersistence && <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[10.5px] font-medium text-accent"><BellOff size={10} aria-hidden /> Alerta retenida (anti-fatiga)</span>}
+          <div className="flex flex-wrap gap-1.5">
+            {a.baselineBuilding && <span className="inline-flex items-center gap-1 rounded-full bg-warn-soft px-2 py-0.5 text-[10.5px] font-medium text-warn"><Hourglass size={10} aria-hidden /> Línea base en construcción</span>}
+            {a.risk.suppressedByPersistence && <span className="inline-flex items-center gap-1 rounded-full bg-accent-soft px-2 py-0.5 text-[10.5px] font-medium text-accent"><BellOff size={10} aria-hidden /> Alerta retenida por persistencia</span>}
           </div>
         )}
       </div>
 
       <footer className="mt-4 flex items-center justify-between gap-2">
-        <span className="tabular text-[11px] text-muted">Act. {formatMinutes(patient.lastUpdateMin)}</span>
-        <Button size="sm" variant={selected ? 'primary' : 'secondary'} icon={<ArrowUpRight size={14} />} onClick={() => onSelect(patient.id)}>Ver análisis</Button>
+        <span className="tabular text-[11.5px] text-muted" title={`Última lectura a las ${formatMinutes(patient.lastUpdateMin)}`}>
+          Actualizado {formatAgo(nowMin, patient.lastUpdateMin)}
+        </span>
+        <Button size="sm" variant="secondary" icon={<ArrowUpRight size={14} />} onClick={() => openPatient(patient.id)}>Ver análisis</Button>
       </footer>
     </motion.article>
   )

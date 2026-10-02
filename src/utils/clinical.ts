@@ -231,10 +231,10 @@ export function analyzePatient(patient: Patient, required: number): PatientAnaly
 }
 
 /** Nivel de riesgo en cada ventana histórica (para la línea de tiempo del paciente). */
-export function levelSeries(patient: Patient, required: number): { t: number; level: RiskLevel; persistence: number }[] {
+export function levelSeries(patient: Patient, required: number): { t: number; level: RiskLevel; persistence: number; score: number }[] {
   const eff = effectiveBaseline(patient.baseline)
   return patient.history.map((p, i) => {
     const s = scoreAt(patient.history, i, eff, required)
-    return { t: p.t, level: s.level, persistence: s.persistence }
+    return { t: p.t, level: s.level, persistence: s.persistence, score: s.score }
   })
 }

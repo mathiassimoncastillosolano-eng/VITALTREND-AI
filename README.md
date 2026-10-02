@@ -52,34 +52,11 @@ src/
 
 ## Funcionalidades
 
-Dashboard con KPIs (count-up), filtros, búsqueda con debounce, orden y tarjetas con mini tendencia · Drawer de paciente con 7 pestañas (Resumen, Signos vitales, Línea base, Explicabilidad, Comparación, Historial, Notas) · Persistencia 1/3–3/3 y filtro anti-fatiga · SHAP con barras · Confianza y horizonte · VitalTrend AI vs NEWS2 + lead time · Centro de alertas con acciones simuladas y toasts · Reportes y Análisis (4 escenarios; sin *accuracy*) · Configuración · Login demo · Búsqueda Ctrl+K · Tema oscuro/claro · `prefers-reduced-motion`, alto contraste y texto grande · Estados loading/empty/error/offline/updating.
+- **Inicio:** resumen derivado de los datos (monitorizados, estables, en observación, riesgo elevado, críticos), filtros por estado, orden por riesgo / última actualización / FC / SpO₂ / temperatura / FR (con sentido ascendente o descendente), búsqueda por nombre, ID, habitación o cama (`hab 103`, `cama 2`; sin distinguir tildes) con estados de escritura, sin resultados y búsqueda borrada.
+- **Tarjeta de paciente:** nombre, ID, edad, sexo, habitación, cama, servicio, estado, riesgo, NEWS2, FC, FR, SpO₂, T°, PAS, ritmo ECG (si hay monitorización) y tendencia de cada signo.
+- **Ver análisis:** navega a `#/patients/:id[/pestaña]` con vista clínica completa: Resumen (monitor multiparámetro con ECG, pletismografía y respiración), Signos vitales (evolución multiparámetro, riesgo, detalle por signo, últimas lecturas), Línea base, Explicabilidad, Comparación NEWS2, Eventos y Evaluación. Incluye migas de pan, paciente anterior/siguiente y enlaces directos por pestaña.
+- Centro de alertas, Análisis, Reportes, Configuración, búsqueda Ctrl+K, tema oscuro/claro y ajustes de accesibilidad.
 
-## Datos y escenarios de demostración
+## Datos
 
-16 pacientes ficticios. Destacan:
-
-| Paciente | Escenario |
-|---|---|
-| 03 | **Riesgo elevado**: FR↑, SpO₂↓, T°↑, persistencia 3/3, NEWS2 = 3 (bajo umbral) |
-| 07 | **Crítico**: deterioro evidente en varios signos |
-| 16 / 13 | **Deterioro temprano**: persistencia 2/3, NEWS2 bajo |
-| 08 | Pico transitorio retenido por anti-fatiga (1/3) |
-| 09 | EPOC: SpO₂ habitual 91 %, NEWS2 marca banda roja pero su línea base lo explica |
-| 11 | Riesgo elevado con NEWS2 también en alerta |
-| 12 | *Cold start*: 2 h de datos, confianza baja |
-| 01, 02, 04… | Estables |
-
-**Panel “Simulación”** (abajo a la derecha): iniciar/pausar/reiniciar, velocidad 0.5×/1×/2× y escenario (Estable, Deterioro, Riesgo elevado, Crítico) aplicado al Paciente 03. Cada tick agrega una ventana horaria simulada.
-
-**Guía de demostración** en el Dashboard: recorrido de 7 pasos que abre el drawer en la pestaña adecuada.
-
-## Limitaciones
-
-- No se ha compilado ni ejecutado en un navegador (ver nota de instalación).
-- El modelo de riesgo, SHAP, confianza, horizonte y las métricas de Análisis/Reportes son **simulados**; no provienen de entrenamiento ni validación.
-- El lead time de cada paciente se calcula sobre su historial simulado (24 ventanas); las series semanales de Reportes son ilustrativas.
-- Las acciones clínicas no persisten: se reinician al recargar.
-
-## Disclaimer académico
-
-Prototipo de un proyecto de investigación académica (solo informe). Sin datos reales, sin cumplimiento regulatorio y sin validación prospectiva.
+Todo funciona con datos de prueba (`src/data`, `src/mockEngine`); no hay backend, API ni base de datos. Los escenarios de prueba (evolución de un paciente, restablecer datos) están en Configuración > Datos de prueba.

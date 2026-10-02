@@ -2,11 +2,11 @@ import { useMemo, useState } from 'react'
 import { motion } from 'motion/react'
 import { CheckCheck, ClipboardCheck, ClipboardList, Stethoscope, Trash2 } from 'lucide-react'
 import { useAppStore } from '@/store/useAppStore'
+import { openPatient } from '@/hooks/useRoute'
 import { useClinicalActions } from '@/hooks/useClinicalActions'
 import type { DecisionType, PatientAnalysis } from '@/types'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
-import { DecisionFlow } from './DecisionFlow'
 
 const LABEL: Record<DecisionType, string> = {
   revisada: 'Alerta revisada',
@@ -26,7 +26,6 @@ export function ClinicalDecisionPanel({ patientId, analysis }: Props) {
   const decisions = useMemo(() => allDecisions.filter((d) => d.patientId === patientId), [allDecisions, patientId])
   const alertId = `${patientId}:${analysis.risk.level}`
   const status = useAppStore((s) => s.alertStatus[alertId])
-  const selectPatient = useAppStore((s) => s.selectPatient)
   const [open, setOpen] = useState(false)
   const [type, setType] = useState<DecisionType>('registrada')
   const [note, setNote] = useState('')
@@ -40,14 +39,12 @@ export function ClinicalDecisionPanel({ patientId, analysis }: Props) {
 
   return (
     <div className="space-y-4">
-      <DecisionFlow decided={decisions.length > 0} />
-
       {analysis.risk.level === 'critico' && (
         <p role="alert" className="rounded-lg border border-crit/40 bg-crit-soft px-3.5 py-2.5 text-[13px] font-medium text-crit">Paciente requiere evaluación prioritaria.</p>
       )}
 
       <div className="grid grid-cols-2 gap-2">
-        <Button icon={<Stethoscope size={15} />} onClick={() => selectPatient(patientId, 'vitales')}>Revisar paciente</Button>
+        <Button icon={<Stethoscope size={15} />} onClick={() => openPatient(patientId, 'vitales')}>Revisar signos vitales</Button>
         <Button icon={<CheckCheck size={15} />} onClick={() => act(patientId, hasAlert ? alertId : null, 'revisada')} disabled={status === 'revisada'}>Marcar como revisada</Button>
         <Button icon={<ClipboardList size={15} />} onClick={() => act(patientId, hasAlert ? alertId : null, 'evaluacion')} disabled={status === 'evaluacion'}>Solicitar evaluación</Button>
         <Button variant="danger" icon={<Trash2 size={15} />} onClick={() => act(patientId, hasAlert ? alertId : null, 'descartada')} disabled={status === 'descartada' || !hasAlert}>Descartar alerta</Button>
@@ -69,13 +66,12 @@ export function ClinicalDecisionPanel({ patientId, analysis }: Props) {
           ))}
         </ul>
       )}
-      <p className="text-[11.5px] text-muted">Acciones simuladas: no se guarda información en ningún servidor.</p>
 
       <Modal
         open={open}
         onClose={() => setOpen(false)}
         title="Registrar decisión clínica"
-        description="La decisión es del profesional sanitario. VitalTrend AI solo prioriza y explica."
+        description="Queda registrada en la historia del paciente con la hora de la última lectura."
         footer={
           <>
             <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
@@ -93,7 +89,7 @@ export function ClinicalDecisionPanel({ patientId, analysis }: Props) {
           ))}
         </fieldset>
         <label className="mt-4 block text-[12.5px] font-medium text-muted">
-          Nota clínica (simulada)
+          Nota clínica
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}

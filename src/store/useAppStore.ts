@@ -14,8 +14,18 @@ import { createRng } from '@/utils/rng'
 import { windowLabel, windowMinutes } from '@/utils/format'
 
 export type LevelFilter = 'todos' | RiskLevel
-export type SortKey = 'estado' | 'riesgo' | 'actualizacion'
-export type DrawerTab = 'resumen' | 'vitales' | 'baseline' | 'explicabilidad' | 'comparacion' | 'historial' | 'notas'
+export type SortKey = 'riesgo' | 'actualizacion' | 'hr' | 'spo2' | 'temp' | 'rr'
+export type SortDir = 'asc' | 'desc'
+
+/** Sentido inicial de cada orden: el más urgente primero. */
+export const DEFAULT_SORT_DIR: Record<SortKey, SortDir> = {
+  riesgo: 'desc',
+  actualizacion: 'desc',
+  hr: 'desc',
+  spo2: 'asc',
+  temp: 'desc',
+  rr: 'desc',
+}
 
 export interface Toast {
   id: number
@@ -53,9 +63,7 @@ interface AppState {
   errorMessage: string
   patients: Patient[]
   analyses: Record<string, PatientAnalysis>
-  filter: { level: LevelFilter; query: string; sort: SortKey }
-  selectedId: string | null
-  drawerTab: DrawerTab
+  filter: { level: LevelFilter; query: string; sort: SortKey; dir: SortDir }
   searchOpen: boolean
   sim: { running: boolean; speed: 0.5 | 1 | 2; scenario: ScenarioKey }
   alertStatus: Record<string, AlertStatus>
@@ -65,7 +73,7 @@ interface AppState {
   updating: boolean
   sidebarCollapsed: boolean
 
-  enterDemo: () => void
+  signIn: () => void
   load: (opts?: { fail?: boolean }) => Promise<void>
   tick: () => void
   toggleSim: () => void
@@ -73,8 +81,8 @@ interface AppState {
   setScenario: (s: ScenarioKey) => void
   resetSim: () => void
   setFilter: (patch: Partial<AppState['filter']>) => void
-  selectPatient: (id: string | null, tab?: DrawerTab) => void
-  setDrawerTab: (tab: DrawerTab) => void
+  setSort: (sort: SortKey) => void
+  toggleSortDir: () => void
   setSearchOpen: (open: boolean) => void
   setAlertStatus: (id: string, status: AlertStatus) => void
   addDecision: (d: Omit<ClinicalDecision, 'id' | 'at'>) => void
@@ -93,9 +101,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   errorMessage: '',
   patients: [],
   analyses: {},
-  filter: { level: 'todos', query: '', sort: 'estado' },
-  selectedId: null,
-  drawerTab: 'resumen',
+  filter: { level: 'todos', query: '', sort: 'riesgo', dir: 'desc' },
   searchOpen: false,
   sim: { running: false, speed: 1, scenario: 'elevado' },
   alertStatus: {},
@@ -105,7 +111,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   updating: false,
   sidebarCollapsed: false,
 
-  enterDemo: () => set({ authed: true }),
+  signIn: () => set({ authed: true }),
 
   load: async (opts) => {
     set({ status: 'loading' })
@@ -188,13 +194,13 @@ export const useAppStore = create<AppState>((set, get) => ({
         alertStatus: {},
         decisions: [],
       }))
-      get().pushToast('info', 'Simulación reiniciada.')
+      get().pushToast('info', 'Datos de prueba restablecidos.')
     })
   },
 
   setFilter: (patch) => set((s) => ({ filter: { ...s.filter, ...patch } })),
-  selectPatient: (id, tab) => set((s) => ({ selectedId: id, drawerTab: tab ?? (id ? s.drawerTab : 'resumen'), searchOpen: false })),
-  setDrawerTab: (drawerTab) => set({ drawerTab }),
+  setSort: (sort) => set((s) => ({ filter: { ...s.filter, sort, dir: DEFAULT_SORT_DIR[sort] } })),
+  toggleSortDir: () => set((s) => ({ filter: { ...s.filter, dir: s.filter.dir === 'desc' ? 'asc' : 'desc' } })),
   setSearchOpen: (searchOpen) => set({ searchOpen }),
   setAlertStatus: (id, status) => set((s) => ({ alertStatus: { ...s.alertStatus, [id]: status } })),
 

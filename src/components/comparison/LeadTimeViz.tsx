@@ -3,7 +3,6 @@ import { Siren, Timer } from 'lucide-react'
 import type { Patient, PatientAnalysis } from '@/types'
 import { windowLabel } from '@/utils/format'
 import { Term } from '@/components/ui/Tooltip'
-import { SimBadge } from '@/components/ui/Card'
 
 export function LeadTimeViz({ patient, analysis: a }: { patient: Patient; analysis: PatientAnalysis }) {
   const t0 = patient.history[0].t
@@ -44,7 +43,6 @@ export function LeadTimeViz({ patient, analysis: a }: { patient: Patient; analys
     <div className="rounded-xl border border-line bg-surface-2/60 p-4">
       <div className="mb-3 flex items-center justify-between">
         <h4 className="flex items-center gap-1.5 text-[13px] font-semibold"><Timer size={14} aria-hidden /> <Term term="Lead time">Visualización del lead time</Term></h4>
-        <SimBadge label="Demostración simulada" />
       </div>
       <div className="space-y-3 pb-3">
         <Row label="VitalTrend AI" t={vt} tone="bg-accent" />

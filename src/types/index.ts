@@ -23,10 +23,21 @@ export interface Baseline {
   hoursAccumulated: number
 }
 
+export type PatientTab = 'resumen' | 'vitales' | 'baseline' | 'explicabilidad' | 'comparacion' | 'eventos' | 'evaluacion'
+
 export interface Patient {
   id: string
   code: string
+  fullName: string
+  sex: 'F' | 'M'
   hospitalId: string
+  /** Motivo de ingreso y días de hospitalización (contexto clínico). */
+  admissionReason: string
+  admittedDays: number
+  /** Paciente con monitorización ECG continua. */
+  ecgMonitored: boolean
+  /** Ritmo de base: sinusal o irregular (fibrilación auricular). */
+  rhythm: 'sinusal' | 'irregular'
   room: string
   bed: number
   specialty: string

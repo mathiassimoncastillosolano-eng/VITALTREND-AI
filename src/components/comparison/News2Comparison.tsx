@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ChevronDown, FlaskConical } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
 import { NEWS2_ALERT_THRESHOLD } from '@/constants'
 import type { PatientAnalysis } from '@/types'
 import { Term } from '@/components/ui/Tooltip'
@@ -25,19 +25,18 @@ function statement(a: PatientAnalysis): string {
 
 export function News2Comparison({ analysis: a }: { analysis: PatientAnalysis }) {
   const [open, setOpen] = useState(false)
-  const vtLabel = a.alertActive ? 'Alerta activa' : a.risk.level === 'evaluacion' ? 'Requiere evaluación' : 'Sin alerta'
+  const vtLabel = a.alertActive ? 'Alerta activa' : a.risk.level === 'evaluacion' ? 'En observación' : 'Sin alerta'
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
         <h4 className="text-[13px] font-semibold">VitalTrend AI vs <Term term="NEWS2">NEWS2</Term></h4>
-        <span className="inline-flex items-center gap-1 text-[11px] text-muted"><FlaskConical size={12} aria-hidden /> Comparación experimental</span>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="rounded-xl border border-line bg-surface-2/60 p-4">
           <div className="text-[12px] font-medium text-muted">VitalTrend AI</div>
           <div className="mt-2"><StatusBadge level={a.risk.level} /></div>
           <div className="mt-2 text-[13px] font-semibold">{vtLabel}</div>
-          <div className="tabular text-[12px] text-muted">Riesgo simulado {Math.round(a.risk.score)}/100</div>
+          <div className="tabular text-[12px] text-muted">Puntaje de riesgo {Math.round(a.risk.score)}/100</div>
         </div>
         <div className="rounded-xl border border-line bg-surface-2/60 p-4">
           <div className="text-[12px] font-medium text-muted">NEWS2</div>

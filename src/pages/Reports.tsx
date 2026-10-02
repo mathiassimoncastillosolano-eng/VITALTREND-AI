@@ -48,7 +48,7 @@ export default function Reports() {
 
   return (
     <div>
-      <PageHeader title="Reportes simulados" subtitle="Resumen del periodo con datos del estado actual y series ilustrativas." actions={<Button icon={<Download size={15} />} onClick={() => push('info', 'Exportación simulada: no se genera ningún archivo.')}>Exportar (simulado)</Button>} />
+      <PageHeader title="Reportes" subtitle="Resumen del periodo con el estado actual de los pacientes." actions={<Button icon={<Download size={15} />} onClick={() => push('info', 'La exportación de reportes estará disponible próximamente.')}>Exportar</Button>} />
       {status === 'loading' ? <div className="grid gap-4 md:grid-cols-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-32" />)}</div> : (
         <>
           <motion.div variants={staggerParent} initial="initial" animate="animate" className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">

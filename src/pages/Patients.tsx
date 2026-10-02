@@ -3,6 +3,7 @@ import { staggerChild, staggerParent } from '@/animations/variants'
 import { PRIMARY_VITALS, VITAL_META } from '@/constants'
 import { useFilteredPatients } from '@/hooks/useDerived'
 import { useAppStore } from '@/store/useAppStore'
+import { openPatient, patientHref } from '@/hooks/useRoute'
 import { formatMinutes, formatVital } from '@/utils/format'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Disclaimer } from '@/components/layout/Disclaimer'
@@ -21,21 +22,20 @@ export default function Patients() {
   const status = useAppStore((s) => s.status)
   const load = useAppStore((s) => s.load)
   const analyses = useAppStore((s) => s.analyses)
-  const select = useAppStore((s) => s.selectPatient)
   const required = useAppStore((s) => s.settings.requiredWindows)
   const setFilter = useAppStore((s) => s.setFilter)
   const list = useFilteredPatients()
 
   return (
     <div>
-      <PageHeader title="Pacientes" subtitle="Vista de lista con signos vitales, riesgo, persistencia y comparación NEWS2." />
+      <PageHeader title="Pacientes" subtitle="Lista completa con signos vitales, riesgo y NEWS2. Selecciona un paciente para abrir su análisis clínico." />
       {status === 'error' ? <ErrorState onRetry={() => void load()} /> : (
         <div className="space-y-4">
           <PatientFilters />
           {status === 'loading' ? (
             <div className="space-y-2">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-14" />)}</div>
           ) : list.length === 0 ? (
-            <EmptyState action={<Button onClick={() => setFilter({ level: 'todos', query: '' })}>Limpiar filtros</Button>} />
+            <EmptyState title="Sin pacientes para esta búsqueda." description="Busca por nombre, ID, habitación (hab 103) o cama (cama 2)." action={<Button onClick={() => setFilter({ level: 'todos', query: '' })}>Limpiar filtros</Button>} />
           ) : (
             <div className="overflow-x-auto rounded-2xl border border-line bg-surface shadow-card">
               <table className="w-full min-w-[980px] text-left text-[13px]">
@@ -56,12 +56,12 @@ export default function Patients() {
                     const a = analyses[p.id]
                     const st = LEVEL_STYLE[a.risk.level]
                     return (
-                      <motion.tr key={p.id} variants={staggerChild} onClick={() => select(p.id, 'resumen')} className="cursor-pointer border-b border-line/60 last:border-0 hover:bg-surface-2/60">
+                      <motion.tr key={p.id} variants={staggerChild} onClick={() => openPatient(p.id)} className="cursor-pointer border-b border-line/60 last:border-0 hover:bg-surface-2/60">
                         <td className="px-4 py-3">
-                          <button className="flex items-center gap-3 text-left" onClick={(e) => { e.stopPropagation(); select(p.id, 'resumen') }}>
-                            <Avatar code={p.code} hue={p.hue} size={34} />
-                            <span><span className="block font-semibold">{p.code}</span><span className="block text-[11.5px] text-muted">{p.hospitalId} · Hab. {p.room} · Cama {p.bed}</span></span>
-                          </button>
+                          <a className="flex items-center gap-3 text-left" href={patientHref(p.id)} onClick={(e) => e.stopPropagation()}>
+                            <Avatar name={p.fullName} hue={p.hue} size={34} />
+                            <span><span className="block font-semibold">{p.fullName}</span><span className="block text-[11.5px] text-muted">{p.code} · ID {p.hospitalId} · Hab. {p.room} · Cama {p.bed}</span></span>
+                          </a>
                         </td>
                         <td className="px-3 py-3"><StatusBadge level={a.risk.level} size="sm" short /></td>
                         <td className="px-3 py-3">

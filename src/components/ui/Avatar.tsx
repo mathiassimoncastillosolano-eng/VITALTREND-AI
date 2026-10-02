@@ -1,5 +1,10 @@
-export function Avatar({ code, hue, size = 40 }: { code: string; hue: number; size?: number }) {
-  const n = code.replace(/\D/g, '')
+function initials(name: string): string {
+  const parts = name.split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length > 2 ? parts.length - 2 : 1][0] : '')).toUpperCase()
+}
+
+export function Avatar({ name, hue, size = 40 }: { name: string; hue: number; size?: number }) {
   return (
     <span
       aria-hidden
@@ -11,7 +16,7 @@ export function Avatar({ code, hue, size = 40 }: { code: string; hue: number; si
         background: `linear-gradient(135deg, hsl(${hue} 55% 42%), hsl(${(hue + 40) % 360} 60% 32%))`,
       }}
     >
-      {n}
+      {initials(name)}
     </span>
   )
 }

@@ -4,9 +4,9 @@ import type { AlertStatus, DecisionType } from '@/types'
 
 const MESSAGES: Record<DecisionType, string> = {
   revisada: 'Alerta revisada correctamente.',
-  evaluacion: 'Evaluación solicitada (simulado).',
-  descartada: 'Alerta descartada (simulado).',
-  registrada: 'Decisión clínica registrada (simulado).',
+  evaluacion: 'Evaluación solicitada.',
+  descartada: 'Alerta descartada.',
+  registrada: 'Decisión clínica registrada.',
 }
 
 const STATUS: Record<DecisionType, AlertStatus> = {
@@ -16,7 +16,7 @@ const STATUS: Record<DecisionType, AlertStatus> = {
   registrada: 'revisada',
 }
 
-/** Acciones clínicas simuladas: solo actualizan el estado del frontend (sin backend). */
+/** Acciones clínicas: actualizan el estado de la aplicación. */
 export function useClinicalActions() {
   const setAlertStatus = useAppStore((s) => s.setAlertStatus)
   const addDecision = useAppStore((s) => s.addDecision)
